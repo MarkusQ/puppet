@@ -29,7 +29,6 @@ describe Puppet::Network::Server do
             @tmpfile.delete
             Puppet.settings.clear
 
-            File.chmod(01777,"/tmp")
             system("rm -rf %s" % @dir)
 
             Puppet::Util::Cacher.expire
