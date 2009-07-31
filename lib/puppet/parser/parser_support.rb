@@ -114,18 +114,18 @@ class Puppet::Parser::Parser
     def find_or_load(namespace, name, type)
         method = "find_#{type}"
         fullname = (namespace + "::" + name).sub(/^::/, '')
-        things_to_try = [fullname]
+        names_to_try = [fullname]
 
         # Try to load the module init file if we're a qualified name
-        things_to_try << fullname.split("::")[0] if fullname.include?("::")
+        names_to_try << fullname.split("::")[0] if fullname.include?("::")
 
         # Otherwise try to load the bare name on its own.  This
         # is appropriate if the class we're looking for is in a
         # module that's different from our namespace.
-        things_to_try << name
+        names_to_try << name
 
-        until (result = @loaded_code.send(method, namespace, name)) or things_to_try.empty? do
-            self.load(things_to_try.shift)
+        until (result = @loaded_code.send(method, namespace, name)) or names_to_try.empty? do
+            self.load(names_to_try.shift)
         end
         return result
     end
@@ -250,7 +250,6 @@ class Puppet::Parser::Parser
         filename = classname.gsub("::", File::SEPARATOR)
         mod = filename.scan(/^[\w-]+/).shift
 
-        # First try to load the top-level module then the individual file
         # First try to load the top-level module then the individual file
         [[mod,     "module %s"              %            mod ],
          [filename,"file %s from module %s" % [filename, mod]]
