@@ -353,7 +353,7 @@ describe Puppet::Parser do
 
         describe "that are already loaded" do
             it "should not try to load anything" do
-                @parser.stubs(:load) { fail "Load called!" }
+                @parser.expects(:load).never
                 @parser.find_or_load("Loaded_namespace","Loaded_name",:my_type)
             end
             it "should return true" do
@@ -385,8 +385,6 @@ describe Puppet::Parser do
     describe Puppet::Parser,"when loading classnames" do
         before :each do
             @loaded_code = mock 'loaded code'
-            @loaded_code.stubs(:find_my_type).with('Loaded_namespace',  'Loaded_name').returns(true)
-            @loaded_code.stubs(:find_my_type).with('Bogus_namespace',   'Bogus_name' ).returns(false)
             @parser = Puppet::Parser::Parser.new :environment => "development",:loaded_code => @loaded_code
         end
 
