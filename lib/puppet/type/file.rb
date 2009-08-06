@@ -722,8 +722,11 @@ module Puppet
             remove_existing(:file)
 
             use_temporary_file = (content.length != 0)
-            path = self[:path]
-            path += ".puppettmp" if use_temporary_file
+            if use_temporary_file
+                path = "#{self[:path]}.puppettmp_#{rand(10000)}" until !File.exists?(path)
+              else
+                path = self[:path]
+              end
 
             mode = self.should(:mode) # might be nil
             umask = mode ? 000 : 022
