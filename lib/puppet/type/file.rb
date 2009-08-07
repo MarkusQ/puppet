@@ -723,7 +723,10 @@ module Puppet
 
             use_temporary_file = (content.length != 0)
             if use_temporary_file
-                path = "#{self[:path]}.puppettmp_#{rand(10000)}" until !File.exists?(path)
+                path = "#{self[:path]}.puppettmp_#{rand(10000)}"
+                while File.exists?(path) or File.symlink?(path)
+                    path = "#{self[:path]}.puppettmp_#{rand(10000)}"
+                    end
               else
                 path = self[:path]
               end
