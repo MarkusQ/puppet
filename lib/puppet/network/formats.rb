@@ -34,8 +34,9 @@ Puppet::Network::FormatHandler.create(:yaml, :mime => "text/yaml") do
     # fixup invalid yaml as per:
     # http://redmine.ruby-lang.org/issues/show/1331
     def fixup(yaml)
-        yaml.gsub!(/((?:&id\d+\s+)?!ruby\/object:.*?)\s*\?/) { "? #{$1}" }
-        yaml
+        yaml.
+          gsub(/((?:&id\d+\s+)?!ruby\/object:.*?)\s*\?/) { "? #{$1}" }.
+          gsub(/\n?(\n\s*)\? (!ruby\/sym\s+.+)\n\s*:/) { "#{$1}#{$2}:" }
     end
 end
 
