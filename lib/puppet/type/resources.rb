@@ -97,13 +97,16 @@ Puppet::Type.newtype(:resources) do
     # Generate any new resources we need to manage.  This is pretty hackish
     # right now, because it only supports purging.
     def generate
+	raise "hell"
         return [] unless self.purge?
         resource_type.instances.
-          reject { |r| managed? }.
-          reject { |r| catalog.resources.include? r.ref }.
+          reject { |r| r.managed? }.
+          # reject { |r| catalog.resources.include? r.ref }.
           select { |r| check(r) }.
+          select { |r| r.class.validparameter?(:ensure) }.
           select { |r| able_to_ensure_absent?(r) }.
           each { |resource|
+	    resource[:ensure] = :absent
             @parameters.each do |name, param|
                 resource[name] = param.value if param.metaparam?
             end
@@ -113,9 +116,9 @@ Puppet::Type.newtype(:resources) do
             resource.purging
           }
     end
-
+   
     def resource_type
-        unless defined? @resource_type
+       unless defined? @resource_type
             unless type = Puppet::Type.type(self[:name])
                 raise Puppet::DevError, "Could not find resource type"
             end
