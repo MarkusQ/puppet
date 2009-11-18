@@ -118,18 +118,12 @@ class Puppet::Parser::AST::Definition < Puppet::Parser::AST::Branch
 
     # Create a new subscope in which to evaluate our code.
     def subscope(scope, resource)
-        args = {
+        scope.newscope(
             :resource => resource,
             :keyword => self.keyword,
             :namespace => self.namespace,
             :source => self
-        }
-
-        oldscope = scope
-        scope = scope.newscope(args)
-        scope.source = self
-
-        return scope
+        )
     end
 
     def to_s

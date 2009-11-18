@@ -42,17 +42,34 @@ class Puppet::Parser::Parser
     # Create an AST object, and automatically add the file and line information if
     # available.
     def ast(klass, hash = {})
-        hash[:line] = @lexer.line unless hash.include?(:line)
+        hash[:class] = klass
+        hash[:line] ||= lexer.line
+        hash[:file] ||= lexer.file
+        hash[:doc]  ||= lexer.getcomment(hash[:line])
+        Real_AST_node.new(hash) 
+    end
 
-        unless hash.include?(:file)
-            if file = @lexer.file
-                hash[:file] = file
-            end
+    require "/Users/markus/projects/zaml/lib/zaml"
+    class Real_AST_node < AST
+        define_opposite_accessors :not_evaluating? => :evaluating?
+        def initialize(details)
+            @details = details
         end
-
-        k = klass.new(hash)
-        k.doc = lexer.getcomment(hash[:line]) if !k.nil? and k.use_docs and k.doc.empty?
-        return k
+        def value
+            #p [:in_object,object_id,@evaluating,evaluating?]
+            fail "circular! #{ZAML.dump(self)}" if evaluating?
+            @value ||= begin evaluating!
+                #p [:enter,object_id,@details]
+                @details.keys.each { |k| v = @details[k]; @details[k] = @details[k].value if v.is_a? Real_AST_node }
+                @details.delete(:class).new(@details)
+                ensure not_evaluating! #; p [:exit,object_id]
+                end
+        end
+        def method_missing(*args,&block)
+            p [:calling,args[0],args[1..-1].collect { |x| x.class }]
+            value.send(*args,&block)
+        end
+        undef_method :evaluate
     end
 
     # The fully qualifed name, with the full namespace.
