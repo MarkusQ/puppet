@@ -49,27 +49,24 @@ class Puppet::Parser::Parser
         Real_AST_node.new(hash) 
     end
 
-    require "/Users/markus/projects/zaml/lib/zaml"
-    class Real_AST_node < AST
-        define_opposite_accessors :not_evaluating? => :evaluating?
+    class Real_AST_node
+        #instance_methods.each { |m| undef_method m unless m =~ /(^__|^send$|^object_id$)/ }
+        define_opposite_accessors :not_instantiating? => :instantiating?
         def initialize(details)
             @details = details
         end
-        def value
-            #p [:in_object,object_id,@evaluating,evaluating?]
-            fail "circular! #{ZAML.dump(self)}" if evaluating?
-            @value ||= begin evaluating!
-                #p [:enter,object_id,@details]
-                @details.keys.each { |k| v = @details[k]; @details[k] = @details[k].value if v.is_a? Real_AST_node }
-                @details.delete(:class).new(@details)
-                ensure not_evaluating! #; p [:exit,object_id]
+        def instantiate(context)
+            p [:instantiating,context.class]
+            fail "circular! #{self}" if instantiating?
+            @value ||= begin instantiating!
+                @details[:class].instantiate(context,@details)
+                ensure not_instantiating!
                 end
         end
-        def method_missing(*args,&block)
-            p [:calling,args[0],args[1..-1].collect { |x| x.class }]
-            value.send(*args,&block)
-        end
-        undef_method :evaluate
+        #def method_missing(*args,&block)
+        #    p [:calling,args[0],args[1..-1].collect { |x| x.class }]
+        #    instantiate.send(*args,&block)
+        #end
     end
 
     # The fully qualifed name, with the full namespace.

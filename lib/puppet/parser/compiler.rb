@@ -140,11 +140,11 @@ class Puppet::Parser::Compiler
             if klass = scope.find_hostclass(name)
                 found << name and next if class_scope(klass)
 
-                resource = klass.evaluate(scope)
+                resource = klass.instantiate(scope).evaluate(scope)
 
                 # If they've disabled lazy evaluation (which the :include function does),
                 # then evaluate our resource immediately.
-                resource.evaluate unless lazy_evaluate
+          ###      resource.evaluate unless lazy_evaluate
                 found << name
             else
                 Puppet.info "Could not find class %s for %s" % [name, node.name]

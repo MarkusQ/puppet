@@ -70,7 +70,7 @@ class Puppet::Parser::Resource
     def evaluate
         if klass = @ref.definedtype
             finish()
-            return klass.evaluate_code(self)
+            return klass.instantiate(self).evaluate_code
         elsif builtin?
             devfail "Cannot evaluate a builtin type"
         else

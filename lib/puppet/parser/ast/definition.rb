@@ -40,17 +40,15 @@ class Puppet::Parser::AST::Definition < Puppet::Parser::AST::Branch
     end
 
     # Now evaluate the code associated with this class or definition.
-    def evaluate_code(resource)
+    def self.adjust_context(resource)
         # Create a new scope.
         scope = subscope(resource.scope, resource)
-
         set_resource_parameters(scope, resource)
+        scope
+    end
 
-        if self.code
-            return self.code.safeevaluate(scope)
-        else
-            return nil
-        end
+    def evaluate_code
+        code && code.safeevaluate(scope)
     end
 
     def initialize(hash = {})
