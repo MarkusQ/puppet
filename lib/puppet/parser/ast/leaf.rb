@@ -72,6 +72,16 @@ class Puppet::Parser::AST
         end
     end
 
+    class Concat < AST::Leaf
+        def evaluate(scope)
+            @value.collect { |x| x.evaluate(scope) }.join
+        end
+
+        def to_s
+            "concat(#{@value.join(',')})"
+        end
+    end
+
     # The 'default' option on case statements and selectors.
     class Default < AST::Leaf; end
 
