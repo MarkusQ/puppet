@@ -72,7 +72,7 @@ class Puppet::Rails::Resource < ActiveRecord::Base
     end
 
     def add_param_to_list(param)
-        @params_list << param
+        params_list << param
     end
 
     def tags_list
