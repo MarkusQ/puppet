@@ -64,8 +64,7 @@ module Puppet
             "
 
         validate do |sources|
-            sources = [sources] unless sources.is_a?(Array)
-            sources.each do |source|
+            [sources].flatten.each do |source|
                 begin
                     uri = URI.parse(URI.escape(source))
                 rescue => detail
@@ -79,8 +78,7 @@ module Puppet
         end
 
         munge do |sources|
-            sources = [sources] unless sources.is_a?(Array)
-            sources.collect { |source| source.sub(/\/$/, '') }
+            [sources].flatten.collect { |source| source.sub(/\/$/, '') }
         end
 
         def change_to_s(currentvalue, newvalue)
