@@ -13,10 +13,12 @@
 # in /var/db/.puppet_appdmg_installed_<name>
 
 require 'puppet/provider/package'
+require 'yaml'
+require "FileUtils"
 
 Puppet::Type.type(:package).provide(:appdmg, :parent => Puppet::Provider::Package) do
     desc "Package management which copies application bundles to a target."
-
+    $appdmg_target = "/Applications"
     confine :operatingsystem => :darwin
 
     commands :hdiutil => "/usr/bin/hdiutil"
@@ -41,16 +43,33 @@ Puppet::Type.type(:package).provide(:appdmg, :parent => Puppet::Provider::Packag
 
     def self.installapp(source, name, orig_source)
         appname = File.basename(source);
-        ditto "--rsrc", source, "/Applications/#{appname}"
-        File.open("/var/db/.puppet_appdmg_installed_#{name}", "w") do |t|
-            t.print "name: '#{name}'\n"
-            t.print "source: '#{orig_source}'\n"
-        end
+        ditto "--rsrc", source, "#{$appdmg_target}/#{appname}"
+        dbfile = "/var/db/.puppet_appdmg_installed_#{name}.yaml"
+        receipthash = File.exist?(dbfile) ? YAML::load_file(dbfile) : {"files" => []}
+        receipthash["name"] = name
+        receipthash["source"] = orig_source
+        receipthash["files"] |= [appname]
+        File.open(dbfile,"w") { |f| f.print receipthash.to_yaml }
     end
 
-    def self.installpkgdmg(source, name)
+    def self.uninstallappdmg(name)
+        dbfile = "/var/db/.puppet_appdmg_installed_#{name}.yaml"
+        unless File.exist?(dbfile)
+            raise Puppet::Error.new("App DMG Package #{name} not installed.")
+        end
+        receipthash = YAML::load_file(dbfile)
+        receipthash["files"].each do |appname|
+            FileUtils.remove_entry_secure("#{$appdmg_target}/#{appname}")
+            unless $? == 0
+                raise Puppet::Error.new("App DMG could not remove \"#{$appdmg_target}/#{appname}\"")
+            end
+        end
+        File.unlink(dbfile)
+    end
+
+    def self.installappdmg(source, name)
         unless source =~ /\.dmg$/i
-            self.fail "Mac OS X PKG DMG's must specificy a source string ending in .dmg"
+            raise Puppet::Error.new("Mac OS X app DMG's must specificy a source string ending in .dmg")
         end
         require 'open-uri'
         require 'facter/util/plist'
@@ -93,7 +112,7 @@ Puppet::Type.type(:package).provide(:appdmg, :parent => Puppet::Provider::Packag
     end
 
     def query
-        if FileTest.exists?("/var/db/.puppet_appdmg_installed_#{@resource[:name]}")
+        if FileTest.exists?("/var/db/.puppet_appdmg_installed_#{@resource[:name]}.yaml")
             return {:name => @resource[:name], :ensure => :present}
         else
             return nil
@@ -103,12 +122,19 @@ Puppet::Type.type(:package).provide(:appdmg, :parent => Puppet::Provider::Packag
     def install
         source = nil
         unless source = @resource[:source]
-            self.fail "Mac OS X PKG DMG's must specify a package source."
+            raise Puppet::Error.new("Mac OS X app DMG's must specify a package source.")
         end
         unless name = @resource[:name]
-            self.fail "Mac OS X PKG DMG's must specify a package name."
+            raise Puppet::Error.new("Mac OS X app DMG's must specify a package name.")
         end
-        self.class.installpkgdmg(source,name)
+        self.class.installappdmg(source,name)
+    end
+
+    def uninstall
+        unless name = @resource[:name]
+            raise Puppet::Error.new("Mac OS X app DMG's must specify a package name.")
+        end
+        self.class.uninstallappdmg(name)
     end
 end
 
