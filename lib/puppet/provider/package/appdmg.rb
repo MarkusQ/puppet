@@ -1,5 +1,5 @@
 # Jeff McCune <mccune.jeff@gmail.com>
-# Changed to app.dmg by: Udo Waechter <root@zoide.net>
+# Changed to app.dmg by: Udo Waechter <udo.waechter@uni-osnabrueck.de>
 # Mac OS X Package Installer which handles application (.app)
 # bundles inside an Apple Disk Image.
 #
@@ -13,15 +13,15 @@
 # in /var/db/.puppet_appdmg_installed_<name>
 
 require 'puppet/provider/package'
+
 Puppet::Type.type(:package).provide(:appdmg, :parent => Puppet::Provider::Package) do
     desc "Package management which copies application bundles to a target."
 
     confine :operatingsystem => :darwin
-    
+
     commands :hdiutil => "/usr/bin/hdiutil"
     commands :curl => "/usr/bin/curl"
     commands :ditto => "/usr/bin/ditto"
-
     # JJM We store a cookie for each installed .app.dmg in /var/db
     def self.instances_by_name
         Dir.entries("/var/db").find_all { |f|
@@ -40,12 +40,12 @@ Puppet::Type.type(:package).provide(:appdmg, :parent => Puppet::Provider::Packag
     end
 
     def self.installapp(source, name, orig_source)
-      appname = File.basename(source);
-      ditto "--rsrc", source, "/Applications/#{appname}"
-      File.open("/var/db/.puppet_appdmg_installed_#{name}", "w") do |t|
-          t.print "name: '#{name}'\n"
-          t.print "source: '#{orig_source}'\n"
-      end
+        appname = File.basename(source);
+        ditto "--rsrc", source, "/Applications/#{appname}"
+        File.open("/var/db/.puppet_appdmg_installed_#{name}", "w") do |t|
+            t.print "name: '#{name}'\n"
+            t.print "source: '#{orig_source}'\n"
+        end
     end
 
     def self.installpkgdmg(source, name)
@@ -69,28 +69,28 @@ Puppet::Type.type(:package).provide(:appdmg, :parent => Puppet::Provider::Packag
         begin
             open(cached_source) do |dmg|
                 xml_str = hdiutil "mount", "-plist", "-nobrowse", "-readonly", "-mountrandom", "/tmp", dmg.path
-                    ptable = Plist::parse_xml xml_str
-                    # JJM Filter out all mount-paths into a single array, discard the rest.
-                    mounts = ptable['system-entities'].collect { |entity|
-                        entity['mount-point']
-                    }.select { |mountloc|; mountloc }
-                    begin
-                        mounts.each do |fspath|
-                            Dir.entries(fspath).select { |f|
-                                f =~ /\.app$/i
-                            }.each do |pkg|
-                                installapp("#{fspath}/#{pkg}", name, source)
-                            end
-                        end # mounts.each do
-                    ensure
-                        hdiutil "eject", mounts[0]
-                    end # begin
-            end # open() do
+                ptable = Plist::parse_xml xml_str
+                # JJM Filter out all mount-paths into a single array, discard the rest.
+                mounts = ptable['system-entities'].collect { |entity|
+                    entity['mount-point']
+                }.select { |mountloc|; mountloc }
+                begin
+                    mounts.each do |fspath|
+                        Dir.entries(fspath).select { |f|
+                            f =~ /\.app$/i
+                        }.each do |app|
+                            installapp("#{fspath}/#{app}", name, source)
+                        end
+                    end # mounts.each do
+                ensure
+                    hdiutil "eject", mounts[0]
+                end # begin
+            end
         ensure
             # JJM Remove the file if open-uri didn't already do so.
             File.unlink(cached_source) if File.exist?(cached_source)
-        end # begin
-    end # def self.installpkgdmg
+        end
+    end
 
     def query
         if FileTest.exists?("/var/db/.puppet_appdmg_installed_#{@resource[:name]}")
