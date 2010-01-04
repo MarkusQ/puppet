@@ -411,7 +411,7 @@ module Util
     def secure_open(file,must_be_w,&block)
         raise Puppet::DevError,"secure_open only works with mode 'w'" unless must_be_w == 'w'
         raise Puppet::DevError,"secure_open only requires a block"    unless block_given?
-        Puppet.warn "#{file} was a symlink to #{File.readlink(file)}" if File.symlink?(file)
+        Puppet.warning "#{file} was a symlink to #{File.readlink(file)}" if File.symlink?(file)
         if File.exists?(file) or File.symlink?(file)
             wait = File.symlink?(file) ? 5.0 : 0.1
             File.delete(file)
