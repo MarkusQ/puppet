@@ -156,7 +156,11 @@ module Puppet::Util::SELinux
                 # If possible we use read_nonblock() in a loop rather than read() to work-
                 # a linux kernel bug.  See ticket #1963 for details.
                 mountfh = File.open("/proc/mounts")
-                mounts += mountfh.read_nonblock(1024) while true
+                begin
+                    mounts << mountfh.read_nonblock(1024)
+                rescue Errno::EINTR
+                    # Popped out to process an unrelated signal, not because we're done
+                end while true
             else
                 # Otherwise we shell out and let cat do it for us
                 mountfh = IO.popen("/bin/cat /proc/mounts")

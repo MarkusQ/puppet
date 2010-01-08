@@ -266,24 +266,50 @@ module Util
         child_pid = Kernel.fork
         $VERBOSE = oldverb
         if child_pid
+            # Parent process executes this
             output_write.close
-
+            reaped_pid = nil
             # Read output in if required
             if ! arguments[:squelch]
                 output = ''
                 begin
-                    loop do
-                        output << output_read.readpartial(4096)
-                    end
+                    method = output_read.respond_to?(:readpartial) ? :readpartial : :sysread
+                    begin
+                        # The timeout needs to be high enough to avoid thrashing but low
+                        # enough that we don't waste too much time waiting for processes
+                        # that exit without closing the pipe (see ticket #1563 comment #7)
+                        # One second seems a reasonable compromise.
+                        output << timeout(1) { output_read.send(method,1) } while true
+                    rescue Timeout::Error
+                        break if reaped_pid = Process.waitpid(child_pid,Process::WNOHANG)
+                    rescue Errno::EINTR
+                        # Just popping out to handle an unrelated signal, but we're not done
+                    end while true
                 rescue EOFError
                     # End of file
                 ensure
-                    output_read.close
+                    willing_to_abandon_pipes = false
+                    #
+                    # Setting this to true allows the 'exec'ed process to spawn a new process,
+                    # pass it the stdout handle, exit, and have the new process write to the 
+                    # handle without getting a SIGPIPE so long as we're still running, at the 
+                    # cost of our leaking handles.  It's set to false because even the notorious
+                    # bug #512055 of osirid (see our ticket #1563 comment #7 for details) would
+                    # not have needed this level of coddling.
+                    #
+                    # If it is needed, passing output_read to a separate light-weight reaper 
+                    # process that waits for the other end to close and then exits may be a
+                    # preferable alternative.
+                    #
+                    if reaped_pid and willing_to_abandon_pipes
+                        $abandoned_pipes ||= {}
+                        $abandoned_pipes[reaped_pid] = output_read
+                    else
+                        output_read.close
+                    end
                 end
             end
-
-            # Parent process executes this
-            Process.waitpid(child_pid)
+            reaped_pid ||= Process.waitpid(child_pid)
             child_status = $?.exitstatus
         else
             # Child process executes this
@@ -321,9 +347,11 @@ module Util
                 end
                 ENV['LANG'] = ENV['LC_ALL'] = ENV['LC_MESSAGES'] = ENV['LANGUAGE'] = 'C'
                 Kernel.exec(*command)
-            rescue => detail
+            rescue Object => detail
                 puts detail
-                exit(1)
+                $stdout.flush
+            ensure
+                exit!(1)
             end
         end
 

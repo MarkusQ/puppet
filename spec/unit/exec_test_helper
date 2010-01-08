@@ -1,0 +1,45 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+options = OptionParser.new
+options.on("--kill-me-withi SIGNAL",/USR[12]/) { |signal| $kill_me = signal }
+options.on("--called-by PID",Integer)          { |parent| $pid = parent }
+options.on("--repeat TIMES",Integer)           { |val|    $n = val }
+options.on("--delay-start SECONDS",Float)      { |val|    $delay_start = val }
+options.on("--delay-exit SECONDS", Float)      { |val|    $delay_exit  = val }
+options.on("--delay-each SECONDS",Float)       { |val|    $delay_each  = val }
+options.on("--delay-close SECONDS",Float)      { |val|    $delay_close = val }
+options.on("--flush")                          {          $flush = true }
+options.on("--fork-badly")                     {          $fork_badly = true }
+options.on("--write-in-fork")                  {          $write_in_fork = true }
+options.on("--signal-exit")                    {          $signal_exit = true }
+rest = options.parse(ARGV)
+
+unless rest.empty?
+    put options
+    exit
+end
+
+unless ps_of_pid = `ps`.split(/\n/).grep(/^ *#{$pid}\b/).first and ps_of_pid =~ /ruby/
+    fail "I don't believe you, #{$pid} is #{ps_of_pid||'not yours'}." 
+end
+
+sleep $delay_start if $delay_start
+$n.times do
+    Process.kill $kill_me.to_sym,$pid if $kill_me
+    `sleep #{$delay_each || 0}` # Note that we want a process sleep, not a thread sleep
+    puts $pid
+    $stdout.flush if $flush
+end
+
+unless $fork_badly and fork
+    $exit_signal = :USR2 # Something unexpected happened
+    trap(:PIPE) { $exit_signal = :PIPE }
+    at_exit { Process.kill $exit_signal,$pid} if $signal_exit
+    sleep $delay_close || 0
+    puts 'Thanks for waiting' if $write_in_fork
+    $stdout.close
+    sleep $delay_exit || 0
+    $exit_signal = :USR1 # We made it to the end!
+end
+
