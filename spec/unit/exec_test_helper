@@ -3,7 +3,7 @@
 require 'optparse'
 $trap_and_relay = []
 options = OptionParser.new
-options.on("--kill-me-withi SIGNAL",/USR[12]/) { |signal| $kill_me = signal }
+options.on("--kill-me-with SIGNAL",/USR[12]/)  { |signal| $kill_me = signal }
 options.on("--called-by PID",Integer)          { |parent| $pid = parent }
 options.on("--repeat TIMES",Integer)           { |val|    $n = val }
 options.on("--delay-start SECONDS",Float)      { |val|    $delay_start = val }
