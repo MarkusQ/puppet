@@ -116,60 +116,54 @@ describe Puppet::Util do
                 end
                 it "should not mind (hang, crash, lose output) if the other end closes the pipe before completing" do
                     n = 5
-                    task = [File.dirname(__FILE__)+'/exec_test_helper','--called-by',$PID,'--repeat',n,'--delay-exit',5]
-                    timeout(10) { Puppet::Util.execute(task).should == "#{$PID}\n"*n }
+                    task = [File.dirname(__FILE__)+'/exec_test_helper','--called-by',$PID,'--repeat',n,'--delay-exit',2]
+                    timeout(5) { Puppet::Util.execute(task).should == "#{$PID}\n"*n }
                 end
                 it "should not hang if the child process terminates but does not close the pipe" do
                     # Ticket #1563 comment #7
                     n = 5
-                    task = [File.dirname(__FILE__)+'/exec_test_helper','--called-by',$PID,'--fork-badly','--repeat',n,'--delay-close',50]
+                    task = [File.dirname(__FILE__)+'/exec_test_helper','--called-by',$PID,'--fork-badly','--repeat',n,'--delay-close',100]
                     timeout(20) {  Puppet::Util.execute(task).should == "#{$PID}\n"*n }
                 end
                 describe "when the child process passes the pipe to a grandchild and terminates without closing the pipe or waiting for the grandchild" do
-                    it "should not cause the grandchild child process to receive a SIGPIPE if the grandchild subsequently ignores the pipe" do
-                        # Ticket #1563 comment #7, null hypothesis for Ticket #3013 comment #18
-                        n = 5
-                        task = [File.dirname(__FILE__)+'/exec_test_helper','--called-by',$PID,'--fork-badly','--repeat',n,'--delay-close',30,'--signal-exit']
-                        # Note that the trapping setup/teardown appaently can NOT be done in a before block
-                        signal = nil
-                        old_usr1_trap = trap(:USR1) { signal = :USR1 } # They exited normally
-                        old_usr2_trap = trap(:USR2) { signal = :USR2 } # They died
-                        old_pipe_trap = trap(:PIPE) { signal = :PIPE } # They got a SIGPIPE
-                        timeout(50) {  
-                            Puppet::Util.execute(task).should == "#{$PID}\n"*n
-                            `sleep 0` until signal # Process sleep, not thread sleep
-                        }
-                        trap(:USR1,old_usr1_trap)
-                        trap(:USR2,old_usr2_trap)
-                        trap(:PIPE,old_pipe_trap)
-                        signal.should == :USR1
+                    [
+                        [
+                            "the grandchild subsequently ignores the pipe", # Ticket #1563 comment #7, null hypothesis for Ticket #3013 comment #18
+                            ['--signal-exit'],
+                            :USR1
+                        ],[
+                            "the grandchild subsequently writes to the pipe without establishing a SIGPIPE trap", # Ticket #3013 comment #18 & #22ff
+                            ['--write-in-fork','--signal-exit'],
+                            :USR1,
+                            "This can be demonstrated (see the ticket) but not in a portable way because ruby _always_ traps SIGPIPE even if the user program dosn't."
+                        ],[
+                            "the grandchild subsequently writes to the pipe after establishing a SIGPIPE trap", # Ticket #3013 comment  #28 & #29
+                            ['--write-in-fork','--signal-exit','--trap-and-relay',:PIPE],
+                            :PIPE
+                        ]
+                    ].each { |desc,flags,expected,pending_reason|
+                        it "should #{(expected == :USR1) ? 'not ' : ''}cause the grandchild child process to receive a SIGPIPE if #{desc}" do
+                            pending pending_reason if pending_reason
+                            n = 5
+                            task = [File.dirname(__FILE__)+'/exec_test_helper','--called-by',$PID,'--fork-badly','--repeat',n,'--delay-close',2,*flags]
+                            # Note that the trapping setup/teardown appaently can NOT be done in a before block
+                            signal = nil
+                            old_usr1_trap = trap(:USR1) { signal = :USR1 } # They exited normally
+                            old_usr2_trap = trap(:USR2) { signal = :USR2 } # They died
+                            old_pipe_trap = trap(:PIPE) { signal = :PIPE } # They got a SIGPIPE
+                            timeout(50) {  
+                                Puppet::Util.execute(task).should == "#{$PID}\n"*n
+                                `sleep 0` until signal # Process sleep, not thread sleep
+                            }
+                            trap(:USR1,old_usr1_trap)
+                            trap(:USR2,old_usr2_trap)
+                            trap(:PIPE,old_pipe_trap)
+                            signal.should == expected
+                        end
+                    }
+                    it "should be able to deal with the command-line 'pseudo-daemon&' idiom (but not retain the output)" do
+                        Puppet::Util.execute(['/bin/sh','-c','(sleep 5; echo foo)&']).should == ''
                     end
-                    it "should not cause the grandchild child process to receive a SIGPIPE if the grandchild subsequently writes to the pipe" do
-                        # Ticket #3013 comment #18
-                        pending %q{
-                            This situation is presently only a speculation and may in any case exceed 
-                            what we should expect the code to do; see note in the implementation for a 
-                            suggested way to handle it if needed.
-                        }
-                        n = 5
-                        task = [File.dirname(__FILE__)+'/exec_test_helper','--called-by',$PID,'--fork-badly','--repeat',n,'--delay-close',30,'--write-in-fork','--signal-exit']
-                        # Note that the trapping setup/teardown apparently can NOT be done in a before block
-                        signal = nil
-                        old_usr1_trap = trap(:USR1) { signal = :USR1 } # They exited normally
-                        old_usr2_trap = trap(:USR2) { signal = :USR2 } # They died
-                        old_pipe_trap = trap(:PIPE) { signal = :PIPE } # They got a SIGPIPE
-                        timeout(50) {  
-                            Puppet::Util.execute(task).should == "#{$PID}\n"*n
-                            `sleep 0` until signal # Process sleep, not thread sleep
-                        }
-                        trap(:USR1,old_usr1_trap)
-                        trap(:USR2,old_usr2_trap)
-                        trap(:PIPE,old_pipe_trap)
-                        signal.should == :USR1
-                   end
-                   it "should be able to deal with the command-line 'pseudo-daemon&' idiom (but not retain the output)" do
-                       Puppet::Util.execute(['/bin/sh','-c','(sleep 5; echo foo)&']).should == ''
-                   end
                 end
             end
         }    

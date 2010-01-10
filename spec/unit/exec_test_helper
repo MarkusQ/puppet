@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'optparse'
+$trap_and_relay = []
 options = OptionParser.new
 options.on("--kill-me-withi SIGNAL",/USR[12]/) { |signal| $kill_me = signal }
 options.on("--called-by PID",Integer)          { |parent| $pid = parent }
@@ -13,6 +14,7 @@ options.on("--flush")                          {          $flush = true }
 options.on("--fork-badly")                     {          $fork_badly = true }
 options.on("--write-in-fork")                  {          $write_in_fork = true }
 options.on("--signal-exit")                    {          $signal_exit = true }
+options.on("--trap-and-relay SIGNAL",/PIPE/)   { |val|    $trap_and_relay |= [val] }
 rest = options.parse(ARGV)
 
 unless rest.empty?
@@ -34,8 +36,8 @@ end
 
 unless $fork_badly and fork
     $exit_signal = :USR2 # Something unexpected happened
-    trap(:PIPE) { $exit_signal = :PIPE }
-    at_exit { Process.kill $exit_signal,$pid} if $signal_exit
+    $trap_and_relay.each { |signal| trap(signal) { $exit_signal = signal } }
+    at_exit { Process.kill $exit_signal,$pid } if $signal_exit
     sleep $delay_close || 0
     puts 'Thanks for waiting' if $write_in_fork
     $stdout.close

@@ -322,6 +322,13 @@ module Util
                     $stdout.reopen('/dev/null', 'w')
                     $stderr.reopen('/dev/null', 'w')
                 else
+                    # Ignore SIGPIPE.  This allows daemons which do not
+                    # properly close stdout/stderr to receive EPIPE on
+                    # attempting to write to the pipe instead of being
+                    # terminated with a SIGPIPE.  See ticket #1563,
+                    # comment 7 and ticket #3013 for details.
+                    trap(:PIPE, 'SIG_IGN')
+
                     $stdout.reopen(output_write)
                     if arguments[:combine]
                         $stderr.reopen(output_write)
