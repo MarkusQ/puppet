@@ -268,6 +268,7 @@ module Util
         if child_pid
             # Parent process executes this
             output_write.close
+            output_read.will_block=false
             reaped_pid = nil
             # Read output in if required
             if ! arguments[:squelch]
@@ -275,13 +276,18 @@ module Util
                 begin
                     method = output_read.respond_to?(:readpartial) ? :readpartial : :sysread
                     begin
-                        # The timeout needs to be high enough to avoid thrashing but low
-                        # enough that we don't waste too much time waiting for processes
-                        # that exit without closing the pipe (see ticket #1563 comment #7)
-                        # One second seems a reasonable compromise.
-                        output << timeout(1) { output_read.send(method,1) } while true
-                    rescue Timeout::Error
-                        break if reaped_pid = Process.waitpid(child_pid,Process::WNOHANG)
+                        if select([output_read], nil, nil,0.5)
+                            # Make sure that there is data to be read to avoid
+                            # indefinitely blocking reads.
+                            output << output_read.send(method, 4096)
+                        elsif reaped_pid
+                            # Once the child has exited, and select has had one more
+                            # chance then stop attempting to read, even if EOF has not
+                            # been reached.  (see ticket #1563 comment #7)
+                            break
+                        else
+                            reaped_pid = Process.waitpid(child_pid, Process::WNOHANG)
+                       end
                     rescue Errno::EINTR
                         # Just popping out to handle an unrelated signal, but we're not done
                     end while true
