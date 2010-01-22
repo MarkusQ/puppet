@@ -9,7 +9,7 @@ describe Puppet::Util::Settings do
 
     it "should be able to make needed directories" do
         settings = Puppet::Util::Settings.new
-        settings.setdefaults :main, :maindir => [tmpfile("main"), "a"]
+        settings.setdefaults :main, :maindir => [tmpfile("main"), "a"], :noop => [false, "meh"]
 
         settings.use(:main)
 
@@ -18,7 +18,7 @@ describe Puppet::Util::Settings do
 
     it "should make its directories with the corret modes" do
         settings = Puppet::Util::Settings.new
-        settings.setdefaults :main, :maindir => {:default => tmpfile("main"), :desc => "a", :mode => 0750}
+        settings.setdefaults :main, :maindir => {:default => tmpfile("main"), :desc => "a", :mode => 0750}, :noop => [false, "meh"]
 
         settings.use(:main)
 
