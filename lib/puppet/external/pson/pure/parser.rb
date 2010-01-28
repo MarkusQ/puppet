@@ -102,6 +102,7 @@ module PSON
           when skip(IGNORE)
             ;
           else
+            puts caller
             raise ParserError, "source '#{peek(60)}' not in PSON(3)!"
           end
         end
