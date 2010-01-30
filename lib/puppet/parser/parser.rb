@@ -17,14 +17,11 @@ module Puppet
     class AlreadyImportedError < ImportError; end
 end
 
-Puppet[:typecheck] = true
-Puppet[:paramcheck] = true
-
 module Puppet
   module Parser
     class Parser < Racc::Parser
 
-module_eval(<<'...end grammar.ra/module_eval...', 'grammar.ra', 802)
+module_eval(<<'...end grammar.ra/module_eval...', 'grammar.ra', 799)
 
 # It got too annoying having code in a file that needs to be compiled.
 require 'puppet/parser/parser_support'
@@ -2083,7 +2080,7 @@ module_eval(<<'.,.,', 'grammar.ra', 656)
         @lexer.commentpop
     # Our class gets defined in the parent namespace, not our own.
     @lexer.namepop
-    newclass classname(val[1]), :arguments => val[2], :code => val[5], :parent => val[3], :line => val[0][:line]
+    newclass classname(val[1]), :arguments => val[2], :parent => val[3], :code => val[5], :line => val[0][:line]
     result = nil
 
     result
