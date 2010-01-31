@@ -69,7 +69,8 @@ class Puppet::Parser::Compiler
             if existing.nodescope? != scope.nodescope?
                 raise Puppet::ParseError, "Cannot have classes, nodes, or definitions with the same name"
             else
-                raise Puppet::DevError, "Somehow evaluated %s %s twice" % [ existing.nodescope? ? "node" : "class", name]
+                type = existing.nodescope? ? "node" : "class"
+                raise Puppet::DevError, "Somehow evaluated #{type} #{name} twice"
             end
         end
         @class_scopes[name] = scope
