@@ -185,13 +185,8 @@ Puppet::Type.type(:file).newproperty(:checksum) do
 
     def insync?(currentvalue)
         @should = [checktype()]
-        if cache(checktype())
-            return currentvalue == currentsum()
-        else
-            # If there's no cached sum, then we don't want to generate
-            # an event.
-            return true
-        end
+        x = cache(checktype())
+        x.nil? || x == current_value
     end
 
     # Even though they can specify multiple checksums, the insync?

@@ -8,62 +8,43 @@ class Puppet::Util::Storage
     include Singleton
     include Puppet::Util
 
-    def self.state
-        return @@state
-    end
-
     def initialize
         self.class.load
     end
 
-    # Return a hash that will be stored to disk.  It's worth noting
-    # here that we use the object's full path, not just the name/type
-    # combination.  At the least, this is useful for those non-isomorphic
-    # types like exec, but it also means that if an object changes locations
-    # in the configuration it will lose its cache.
-    def self.cache(object)
-        if object.is_a? Puppet::Type
-            # We used to store things by path, now we store them by ref.
-            # In oscar(0.20.0) this changed to using the ref.
-            if @@state.include?(object.path)
-                @@state[object.ref] = @@state[object.path]
-                @@state.delete(object.path)
+    def self.cache_key_for(object)
+        case object
+            when Puppet::Type; object.ref
+            when Symbol;       object
+            else raise ArgumentError, "You can only cache information for Types and symbols"
             end
-            name = object.ref
-        elsif object.is_a?(Symbol)
-            name = object
-        else
-            raise ArgumentError, "You can only cache information for Types and symbols"
-        end
+    end
 
-        return @@state[name] ||= {}
+    # Return a hash that will be stored to disk.  
+    def self.cache(object)
+        @@state[cache_key_for(object)]
+    end
+
+    def self.forget(object)
+        @@state.delete(cache_key_for(object))
     end
 
     def self.clear
-        @@state.clear
-        Storage.init
+        @@state = Hash.new { |h,k| h[k] = @@prior_state[k] || {} }
+        @@prior_state = {}
     end
 
-    def self.init
-        @@state = {}
-        @@splitchar = "\t"
-    end
-
-    self.init
+    clear
 
     def self.load
         Puppet.settings.use(:main) unless FileTest.directory?(Puppet[:statedir])
 
-        unless File.exists?(Puppet[:statefile])
-            unless defined? @@state and ! @@state.nil?
-                self.init
-            end
-            return
-        end
+        return unless File.exists?(Puppet[:statefile])
         Puppet::Util.benchmark(:debug, "Loaded state") do
             Puppet::Util::FileLocking.readlock(Puppet[:statefile]) do |file|
                 begin
-                    @@state = YAML.load(file)
+                    @@prior_state = YAML.load(file)
+                    puts "Loaded #{@@prior_state.inspect}"
                 rescue => detail
                     Puppet.err "Checksumfile %s is corrupt (%s); replacing" %
                         [Puppet[:statefile], detail]
@@ -79,9 +60,9 @@ class Puppet::Util::Storage
             end
         end
 
-        unless @@state.is_a?(Hash)
+        unless @@prior_state.is_a?(Hash)
             Puppet.err "State got corrupted"
-            self.init
+            clear
         end
 
         #Puppet.debug "Loaded state is %s" % @@state.inspect
@@ -89,6 +70,10 @@ class Puppet::Util::Storage
 
     def self.stateinspect
         @@state.inspect
+    end
+
+    def self.priorstateinspect
+        @@prior_state.inspect
     end
 
     def self.store

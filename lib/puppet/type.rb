@@ -733,13 +733,16 @@ class Type
                 [changes.length]
         end
 
-        # If we're in noop mode, we don't want to store the checked time,
-        # because it will result in the resource not getting scheduled if
+        # We don't want/need to retain state for deleted/nonexistant resources
+        # (for one thing, there are far too many of them).
+        # If we're in noop mode, we don't want to modify the state cache,
+        # because it might result in the resource not getting scheduled if
         # someone were to apply the catalog in non-noop mode.
         # We're going to go ahead and record that we checked if there were
         # no changes, since it's unlikely it will affect the scheduling.
-        noop = noop?
-        if ! noop or (noop && changes.length == 0)
+        if deleting? and !noop?
+            Storage.forget(self)
+        elsif changes.length == 0 || !noop?
             self.cache(:checked, Time.now)
         end
         return changes.flatten
