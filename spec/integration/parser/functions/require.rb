@@ -22,6 +22,6 @@ describe "The require function" do
         @scope.resource["require"].should_not be_nil
         ref = @scope.resource["require"]
         ref.type.should == "Class"
-        ref.title.should == "requiredclass"
+        ref.title.should == "Requiredclass"
     end
 end

@@ -1199,7 +1199,7 @@ module_eval(<<'.,.,', 'grammar.ra', 138)
         result.push ast(AST::Resource,
             :type => val[0],
             :title => instance[0],
-            :params => instance[1])
+            :parameters => instance[1])
     }
 
     result
@@ -1218,7 +1218,7 @@ module_eval(<<'.,.,', 'grammar.ra', 158)
 module_eval(<<'.,.,', 'grammar.ra', 161)
   def _reduce_36(val, _values, result)
         # a defaults setting for a type
-    result = ast(AST::ResourceDefaults, :type => val[0], :params => val[2])
+    result = ast(AST::ResourceDefaults, :type => val[0], :parameters => val[2])
 
     result
   end
@@ -1227,7 +1227,7 @@ module_eval(<<'.,.,', 'grammar.ra', 161)
 module_eval(<<'.,.,', 'grammar.ra', 167)
   def _reduce_37(val, _values, result)
         @lexer.commentpop
-    result = ast AST::ResourceOverride, :object => val[0], :params => val[2]
+    result = ast AST::ResourceOverride, :object => val[0], :parameters => val[2]
 
     result
   end
