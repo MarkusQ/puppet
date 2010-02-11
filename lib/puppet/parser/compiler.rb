@@ -152,7 +152,7 @@ class Puppet::Parser::Compiler
             if klass = scope.find_hostclass(name)
                 found << name and next if class_scope(klass)
 
-                resource = klass.mk_plain_resource(scope)
+                resource = klass.mk_plain_resource(scope).instantiate(scope).evaluate(scope)
 
                 # If they've disabled lazy evaluation (which the :include function does),
                 # then evaluate our resource immediately.
