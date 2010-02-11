@@ -10,8 +10,7 @@ class Puppet::Parser::AST
 
         def initialize(args)
             super
-            n = name.safeevaluate(scope)
-            p [:initializing,:vardef,n]
+            n = name.safeevaluate
             @future = scope.future_for(n)
             @future.source = self
         end
@@ -19,12 +18,7 @@ class Puppet::Parser::AST
         # Look up our name and value, and store them appropriately.  The
         # lexer strips off the syntax stuff like '$'.
         def evaluate(scope)
-            #name = @name.safeevaluate(scope)
-            value = @value.safeevaluate(scope)
-            
-            #parsewrap do
-            #    scope.setvar(name,value, :file => @file, :line => @line, :append => @append)
-            #end
+            @value.safeevaluate
         end
 
         def each
