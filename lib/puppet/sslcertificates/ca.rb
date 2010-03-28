@@ -283,8 +283,13 @@ class Puppet::SSLCertificates::CA
 
         certfile = host2certfile(host)
         if File.exists?(certfile)
-            Puppet.notice "Removing previously signed certificate #{certfile} for #{host}"
-            Puppet::SSLCertificates::Inventory::rebuild
+            we_would_autosign = ["true",true].include?(Puppet[:autosign]) or Puppet::Network::AuthStore.new(Puppet[:autosign]).allowed?(host)
+            if ["true",true].inclide?(Puppet[:replace_certs]) or (Puppet[:replace_certs].empty? and we_would_autosign)
+                Puppet.notice "Removing previously signed certificate #{certfile} for #{host}"
+                Puppet::SSLCertificates::Inventory::rebuild
+            else
+                Puppet.warn "Certificate request for #{host} received but we already have signed a certificate "
+            end
         end
     end
 

@@ -362,6 +362,14 @@ module Puppet
                 autosigns any key request, and is a very bad idea), false (which
                 never autosigns any key request), and the path to a file, which
                 uses that configuration file to determine which keys to sign."},
+        :replace_certs => { :default => "",
+            :desc => %q{Should receipt of a certificate request remove the cached
+                copy of an already issued certificate.  Values are "true", 
+                "false", and "" which only removes certificates if they would 
+                not be autosigned.  As "" is the default and covers the two 
+                most common use cases (despite repeated warnings some people
+                use autosign in production and use certificate collisions as
+                a safety net) most users will never need to change this setting.}},
         :ca_days => ["", "How long a certificate should be valid.
                  This parameter is deprecated, use ca_ttl instead"],
         :ca_ttl => ["5y", "The default TTL for new certificates; valid values
