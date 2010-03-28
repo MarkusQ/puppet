@@ -68,9 +68,10 @@ module Puppet
             @globalallow.nil? && @declarations.size == 0
         end
 
-        def initialize
+        def initialize(file=nil)
             @globalallow = nil
             @declarations = []
+            File.foreach(file) { |l| allow(l.chomp) unless l =~ /^\s*(\#|$)/ } if file =~ /^\// and File.exists?(file)
         end
 
         def to_s

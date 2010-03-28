@@ -3,6 +3,13 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 
 require 'puppet/network/authconfig'
+require 'tempfile'
+
+def make_auth_file(*contents)
+    file = Tempfile.new("authstore_testing").path
+    File.open(file,'w') { |f| f.puts contents.flatten }
+    file
+end
 
 describe Puppet::Network::AuthStore do
     describe "when checking if the acl has some entries" do
@@ -30,6 +37,23 @@ describe Puppet::Network::AuthStore do
             @authstore.deny('1.1.1.*')
 
             @authstore.should_not be_empty
+        end
+    end
+
+    describe "when a auth file is provided at initialization" do
+        it "should be empty if the file does not exist" do
+            Puppet::Network::AuthStore.new('/bogusfile/name').should be_empty
+        end
+        it "should be empty if the filename is not fully qualified" do
+            Puppet::Network::AuthStore.new('my_file').should be_empty
+        end
+        it "should ignore blank lines and comments in the file" do
+            Puppet::Network::AuthStore.new(make_auth_file('','# comment',' ','    # and so on...')).should be_empty
+        end
+        it "should read allow patterns from the file" do
+            @authstore = Puppet::Network::AuthStore.new(make_auth_file('1.1.1.*','foo.com'))
+            @authstore.allowed?('stuff.org','1.1.1.5').should == true
+            @authstore.allowed?('foo.com','2.3.4.5').should   == true
         end
     end
 end
