@@ -88,14 +88,7 @@ class Puppet::SSL::CertificateAuthority
 
     # Create an AuthStore for autosigning.
     def autosign_store(file)
-        auth = Puppet::Network::AuthStore.new
-        File.readlines(file).each do |line|
-            next if line =~ /^\s*#/
-            next if line =~ /^\s*$/
-            auth.allow(line.chomp)
-        end
-
-        auth
+        Puppet::Network::AuthStore.new(file)
     end
 
     # Retrieve (or create, if necessary) the certificate revocation list.
