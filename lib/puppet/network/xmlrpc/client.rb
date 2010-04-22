@@ -1,4 +1,3 @@
-require 'puppet/sslcertificates'
 require 'puppet/network/http_pool'
 require 'openssl'
 require 'puppet/external/base64'

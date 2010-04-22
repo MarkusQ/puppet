@@ -5,7 +5,6 @@ require File.dirname(__FILE__) + '/../../lib/puppettest'
 require 'mocha'
 require 'puppettest'
 require 'puppet/network/client/ca'
-require 'puppet/sslcertificates/support'
 
 class TestClientCA < Test::Unit::TestCase
     include PuppetTest::ServerTest

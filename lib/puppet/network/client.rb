@@ -4,7 +4,6 @@ require 'puppet'
 require 'puppet/network/xmlrpc/client'
 require 'puppet/util/subclass_loader'
 require 'puppet/util/methodhelper'
-require 'puppet/sslcertificates/support'
 
 require 'puppet/network/handler'
 
@@ -36,9 +35,6 @@ class Puppet::Network::Client
     include Puppet::Util
     extend Puppet::Util::SubclassLoader
     include Puppet::Util::MethodHelper
-
-    # This handles reading in the key and such-like.
-    include Puppet::SSLCertificates::Support
 
     attr_accessor :schedule, :lastrun, :local, :stopping
 

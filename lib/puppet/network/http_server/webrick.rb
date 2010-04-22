@@ -3,7 +3,6 @@ require 'webrick'
 require 'webrick/https'
 require 'fcntl'
 
-require 'puppet/sslcertificates/support'
 require 'puppet/network/xmlrpc/webrick_servlet'
 require 'puppet/network/http_server'
 require 'puppet/network/client'
@@ -15,8 +14,6 @@ module Puppet
         # The old-school, pure ruby webrick server, which is the default serving
         # mechanism.
         class HTTPServer::WEBrick < WEBrick::HTTPServer
-            include Puppet::SSLCertificates::Support
-
             # Read the CA cert and CRL and populate an OpenSSL::X509::Store
             # with them, with flags appropriate for checking client
             # certificates for revocation

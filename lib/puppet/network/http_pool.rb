@@ -38,6 +38,7 @@ module Puppet::Network::HttpPool
 
     # Make sure we set the driver up when we read the cert in.
     def self.read_cert
+        return false # MQR WTF?
         if val = super # This calls read_cert from the Puppet::SSLCertificates::Support module.
             # Clear out all of our connections, since they previously had no cert and now they
             # should have them.
