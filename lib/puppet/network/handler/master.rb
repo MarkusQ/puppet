@@ -1,6 +1,5 @@
 require 'openssl'
 require 'puppet'
-require 'puppet/sslcertificates'
 require 'xmlrpc/server'
 require 'yaml'
 
