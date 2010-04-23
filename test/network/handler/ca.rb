@@ -26,10 +26,8 @@ class TestCA < Test::Unit::TestCase
         ca = nil
 
         # create our ca
-        assert_nothing_raised {
-            ca = Puppet::Network::Handler.ca.new(:autosign => true)
-        }
-
+        assert_nothing_raised { ca = Puppet::Network::Handler.ca.new }
+        Puppet[:autosign] = true
         # create a cert with a fake name
         key = nil
         csr = nil
@@ -82,9 +80,8 @@ class TestCA < Test::Unit::TestCase
         caserv = nil
 
         # make our CA server
-        assert_nothing_raised {
-            caserv = Puppet::Network::Handler.ca.new(:autosign => false)
-        }
+        assert_nothing_raised { caserv = Puppet::Network::Handler.ca.new }
+        Puppet[:autosign] = false
 
         # retrieve the actual ca object
         assert_nothing_raised {
@@ -158,11 +155,11 @@ class TestCA < Test::Unit::TestCase
             f.puts "hostmatch.domain.com"
             f.puts "*.other.com"
         }
-
+ 
         caserv = nil
-        assert_nothing_raised {
-            caserv = Puppet::Network::Handler.ca.new(:autosign => autosign)
-        }
+        assert_nothing_raised { caserv = Puppet::Network::Handler.ca.new }
+        Puppet[:autosign] = autosign
+        Puppet[:name] = "puppetmasterd"
 
         # make sure we know what's going on
         assert(caserv.autosign?("hostmatch.domain.com"))
@@ -173,6 +170,7 @@ class TestCA < Test::Unit::TestCase
 
     # verify that things aren't autosigned by default
     def test_nodefaultautosign
+        Puppet[:name] = "puppetmasterd"
         caserv = nil
         assert_nothing_raised {
             caserv = Puppet::Network::Handler.ca.new()
@@ -203,6 +201,7 @@ class TestCA < Test::Unit::TestCase
 
     # Make sure true/false causes the file to be ignored.
     def test_autosign_true_beats_file
+        Puppet[:name] = "puppetmasterd"
         caserv = nil
         assert_nothing_raised {
             caserv = Puppet::Network::Handler.ca.new()

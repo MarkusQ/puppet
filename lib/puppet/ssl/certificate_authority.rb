@@ -60,35 +60,23 @@ class Puppet::SSL::CertificateAuthority
 
     # If autosign is configured, then autosign all CSRs that match our configuration.
     def autosign
-        return unless auto = autosign?
-
-        store = nil
-        if auto != true
-            store = autosign_store(auto)
-        end
-
+        @store = nil # force a re-read of the authorization file
         Puppet::SSL::CertificateRequest.search("*").each do |csr|
-            sign(csr.name) if auto == true or store.allowed?(csr.name, "127.1.1.1")
+            sign(csr.name) if autosign?(csr.name)
         end
     end
 
-    # Do we autosign?  This returns true, false, or a filename.
-    def autosign?
-        auto = Puppet[:autosign]
-        return false if ['false', false].include?(auto)
-        return true if ['true', true].include?(auto)
-
-        raise ArgumentError, "The autosign configuration '%s' must be a fully qualified file" % auto unless auto =~ /^\//
-        if FileTest.exist?(auto)
-            return auto
+    def autosign?(hostname,ip="127.1.1.1")
+        case (auto = Puppet[:autosign]).to_s
+        when 'false'; false
+        when 'true';  true
         else
-            return false
+            p [:auto,auto]
+            raise ArgumentError, "The autosign configuration '%s' must be a fully qualified file" % auto unless auto =~ /^\//
+            return false unless FileTest.exist?(auto)
+            @store ||= Puppet::Network::AuthStore.new(auto)
+            @store.allowed?(hostname,ip)
         end
-    end
-
-    # Create an AuthStore for autosigning.
-    def autosign_store(file)
-        Puppet::Network::AuthStore.new(file)
     end
 
     # Retrieve (or create, if necessary) the certificate revocation list.
