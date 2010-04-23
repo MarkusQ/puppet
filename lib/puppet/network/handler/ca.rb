@@ -19,6 +19,10 @@ class Puppet::Network::Handler::CA < Puppet::Network::Handler
         Puppet.settings.use(:main, :ssl, :ca)
     end
 
+    def autosign?(hostname,ip="127.1.1.1")
+        Puppet::SSL::CertificateAuthority.instance.autosign?(hostname,ip)
+    end
+
     # our client sends us a csr, and we either store it for later signing,
     # or we sign it right away
     def getcert(csrtext, client = nil, clientip = nil)
