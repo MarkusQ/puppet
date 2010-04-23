@@ -74,7 +74,7 @@ module Puppet
                     raise ServerError, "A server must have handlers"
                 end
 
-                unless self.read_cert
+                unless @cert = Puppet::SSL::Certificate.hostcert
                     if ca = handler_instances.find { |handler| handler.is_a?(Puppet::Network::Handler.ca) }
                         request_cert(ca)
                     else

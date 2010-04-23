@@ -18,7 +18,7 @@ class Puppet::Network::Client::CA < Puppet::Network::Client
     def request_cert
         Puppet.settings.use(:main, :ssl)
 
-        if cert = read_cert
+        if cert = Puppet::SSL::Certificate.hostcert
             return cert
         end
 

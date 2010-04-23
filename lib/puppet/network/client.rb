@@ -87,7 +87,7 @@ class Puppet::Network::Client
 
             @driver = self.class.xmlrpc_client.new(args)
 
-            self.read_cert
+            @cert = Puppet::SSL::Certificate.hostcert
 
             # We have to start the HTTP connection manually before we start
             # sending it requests or keep-alive won't work.  Note that with #1010,
