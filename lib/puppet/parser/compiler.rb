@@ -472,21 +472,9 @@ class Puppet::Parser::Compiler
     end
 
     def create_settings_scope
-        unless settings_type = environment.known_resource_types.hostclass("settings")
-            settings_type = Puppet::Resource::Type.new :hostclass, "settings"
-            environment.known_resource_types.add(settings_type)
-        end
-
-        settings_resource = Puppet::Parser::Resource.new("class", "settings", :scope => @topscope)
-        settings_type.evaluate_code(settings_resource)
-
-        @catalog.add_resource(settings_resource)
-
-        scope = @topscope.class_scope(settings_type)
-
         Puppet.settings.each do |name, setting|
             next if name.to_s == "name"
-            scope.setvar name.to_s, environment[name]
+            @topscope.setvar "setting_#{name.to_s}", environment[name]
         end
     end
 
