@@ -179,7 +179,7 @@ class Puppet::Resource::Type
 
     unless @parent_type
       raise "Must pass scope to parent_type when called first time" unless scope
-      unless @parent_type = scope.environment.known_resource_types.send("find_#{type}", scope.namespaces, parent)
+      unless @parent_type = scope.environment.known_resource_types.send("find_#{type}", [name], parent)
         fail Puppet::ParseError, "Could not find parent resource type '#{parent}' of type #{type} in #{scope.environment}"
       end
     end
