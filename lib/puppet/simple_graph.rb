@@ -27,15 +27,16 @@ class Puppet::SimpleGraph
     def adjacent(options)
       direction = options[:direction] || :out
       options[:type] ||= :vertices
-
-      return send(direction.to_s + "_edges") if options[:type] == :edges
-
-      @adjacencies[direction].keys.reject { |vertex| @adjacencies[direction][vertex].empty? }
+      if options[:type] == :edges
+        send(direction.to_s + "_edges") 
+      else
+        @adjacencies[direction].keys
+      end
     end
 
     # Add an edge to our list.
     def add_edge(direction, edge)
-      opposite_adjacencies(direction, edge) << edge
+      (@adjacencies[direction][other_vertex(direction, edge)] ||= Set.new) << edge
     end
 
     # Return all known edges.
@@ -45,7 +46,7 @@ class Puppet::SimpleGraph
 
     # Test whether we share an edge with a given vertex.
     def has_edge?(direction, vertex)
-      return(vertex_adjacencies(direction, vertex).length > 0 ? true : false)
+      (edges = @adjacencies[direction][vertex]) && !edges.empty?
     end
 
     # Create methods for returning the degree and edges.
@@ -73,34 +74,18 @@ class Puppet::SimpleGraph
     # Remove an edge from our list.  Assumes that we've already checked
     # that the edge is valid.
     def remove_edge(direction, edge)
-      opposite_adjacencies(direction, edge).delete(edge)
+      (@adjacencies[direction][other_vertex(direction, edge)] || {}).delete(edge)
     end
 
     def to_s
       vertex.to_s
-    end
-
-    private
-
-    # These methods exist so we don't need a Hash with a default proc.
-
-    # Look up the adjacencies for a vertex at the other end of an
-    # edge.
-    def opposite_adjacencies(direction, edge)
-      opposite_vertex = other_vertex(direction, edge)
-      vertex_adjacencies(direction, opposite_vertex)
-    end
-
-    # Look up the adjacencies for a given vertex.
-    def vertex_adjacencies(direction, vertex)
-      @adjacencies[direction][vertex] ||= Set.new
-      @adjacencies[direction][vertex]
     end
   end
 
   def initialize
     @vertices = {}
     @edges = []
+    @reachable_from = {}
   end
 
   # Clear our graph.
@@ -124,6 +109,10 @@ class Puppet::SimpleGraph
     # tree in the :out direction than to search a normal tree
     # in the :in direction.
     @reversal.tree_from_vertex(resource, :out).keys
+  end
+
+  def reasonable_dependencies(resource)
+   reachable_from_vertex(resource, :in).keys
   end
 
   # Whether our graph is directed.  Always true.  Used to produce dot files.
@@ -381,6 +370,21 @@ class Puppet::SimpleGraph
     predecessor
   end
 
+  def reachable_from_vertex(start,direction = :out,seen = Set.new)
+    unless seen.include? start
+      print "\r#{$iii+=1}  "
+      seen << start
+      adjacent(start,:direction => direction).each { |node| reachable_from_vertex(node,direction,seen) }
+    end
+    seen
+  end
+
+  def reachable_from_vertex(start,direction = :out)
+    rfv = (@reachable_from[start] ||= {})
+    rfv[direction] || 
+      adjacent(start,:direction => direction).inject(rfv[direction] = {start => 1}) { |result,node| result.update reachable_from_vertex(node,direction) }
+  end
+
   # LAK:FIXME This is just a paste of the GRATR code with slight modifications.
 
   # Return a DOT::DOTDigraph for directed graphs or a DOT::DOTSubgraph for an
@@ -444,5 +448,19 @@ class Puppet::SimpleGraph
     File.open(file, "w") { |f|
       f.puts to_dot("name" => name.to_s.capitalize)
     }
+  end
+end
+
+class Puppet::SimpleGraph
+  def method_missing(*args,&block)
+    @real ||= Puppet::SimpleGraph_x.new
+#    p [:sg,args[0],args.collect { |a| a.class },caller[0]] unless caller[0] =~ /_spec/
+#    p [:sg,args[0],caller[0]] unless caller[0] =~ /_spec/
+    p [:sg,args[0]] unless caller[0] =~ /_spec/
+    if block_given?
+      @real.send(*args,&block)
+    else
+      @real.send(*args)
+    end
   end
 end
