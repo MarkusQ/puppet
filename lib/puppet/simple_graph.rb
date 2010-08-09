@@ -79,15 +79,15 @@ class Puppet::SimpleGraph
     vertices
   end
 
-  # Provide a topological sort.
-  def topsort
+  # Provide a topological sort with cycle reporting
+  def topsort_with_cycles
     degree = {}
     zeros = []
     result = []
 
     # Collect each of our vertices, with the number of in-edges each has.
     vertices.each do |v|
-      edges = @in_to[v].values.flatten
+      edges = @in_to[v].dup
       zeros << v if edges.empty?
       degree[v] = edges
     end
@@ -97,14 +97,45 @@ class Puppet::SimpleGraph
     while v = zeros.pop
       result << v
       @out_from[v].each { |v2,es| 
-        zeros << v2 if (degree[v2] -= es).empty?
+        degree[v2].delete(v)
+        zeros << v2 if degree[v2].empty?
       }
     end
 
     # If we have any vertices left with non-zero in-degrees, then we've found a cycle.
-    if cycles = degree.values.find_all { |edges| edges.length > 0 } and cycles.length > 0
+    if cycles = degree.values.reject { |ns| ns.empty? } and cycles.length > 0
       message = cycles.collect { |edges| '('+edges.collect { |e| e.to_s }.join(", ")+')' }.join(", ")
       raise Puppet::Error, "Found dependency cycles in the following relationships: #{message}; try using the '--graph' option and open the '.dot' files in OmniGraffle or GraphViz"
+    end
+
+    result
+  end
+
+  # Provide a topological sort.
+  def topsort
+    degree = {}
+    zeros = []
+    result = []
+
+    # Collect each of our vertices, with the number of in-edges each has.
+    vertices.each do |v|
+      edges = @in_to[v]
+      zeros << v if edges.empty?
+      degree[v] = edges.length
+    end
+
+    # Iterate over each 0-degree vertex, decrementing the degree of
+    # each of its out-edges.
+    while v = zeros.pop
+      result << v
+      @out_from[v].each { |v2,es| 
+        zeros << v2 if (degree[v2] -= 1) == 0
+      }
+    end
+
+    # If we have any vertices left with non-zero in-degrees, then we've found a cycle.
+    if cycles = degree.values.reject { |ns| ns == 0  } and cycles.length > 0
+      topsort_with_cycles
     end
 
     result
