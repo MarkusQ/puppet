@@ -7,12 +7,14 @@ require 'set'
 
 # A hopefully-faster graph class to replace the use of GRATR.
 class Puppet::SimpleGraph
-
-  # @in_to.keys == @out_to.keys == all vertices
-  # @in_to[v1][v2] == @out_from[v2][v1] == all edges from v1 to v2
-  # @in_to [v1].keys == vertices with edges leading to   v
-  # @out_to[v1].keys == vertices with edges leading from v
-  # no operation may shed reference loops (for gc)
+  # 
+  # All public methods of this class must maintain (assume ^ ensure) the following invariants:
+  #
+  #   @in_to.keys == @out_to.keys == all vertices
+  #   @in_to[v1][v2] == @out_from[v2][v1] == all edges from v1 to v2
+  #   @in_to [v1].keys == vertices with edges leading to   v
+  #   @out_to[v1].keys == vertices with edges leading from v
+  #   no operation may shed reference loops (for gc)
 
   def initialize
     @in_to = {}
