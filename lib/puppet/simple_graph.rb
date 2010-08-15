@@ -7,15 +7,21 @@ require 'set'
 
 # A hopefully-faster graph class to replace the use of GRATR.
 class Puppet::SimpleGraph
-  # 
-  # All public methods of this class must maintain (assume ^ ensure) the following invariants:
   #
-  #   @in_to.keys == @out_to.keys == all vertices
-  #   @in_to[v1][v2] == @out_from[v2][v1] == all edges from v1 to v2
-  #   @in_to [v1].keys == vertices with edges leading to   v
-  #   @out_to[v1].keys == vertices with edges leading from v
+  # All public methods of this class must maintain (assume ^ ensure) the following invariants, where "=~=" means
+  # equiv. up to order:
+  #
+  #   @in_to.keys =~= @out_to.keys =~= all vertices
+  #   @in_to.values.collect { |x| x.values }.flatten =~= @out_from.values.collect { |x| x.values }.flatten =~= all edges
+  #   @in_to[v1][v2] =~= @out_from[v2][v1] =~= all edges from v1 to v2
+  #   @in_to   [v].keys =~= vertices with edges leading to   v
+  #   @out_from[v].keys =~= vertices with edges leading from v
   #   no operation may shed reference loops (for gc)
-
+  #   recursive operation must scale with the depth of the spanning trees, or better (e.g. no recursion over the set
+  #       of all vertices, etc.)
+  #
+  # What is the DAG/DG assumption? 
+  #
   def initialize
     @in_to = {}
     @out_from = {}
@@ -39,12 +45,17 @@ class Puppet::SimpleGraph
   end
 
   def dependents(resource)
-   downstream_from_vertex(resource).keys
+   vertex?(resource) ? downstream_from_vertex(resource).keys : []
   end
 
   # Whether our graph is directed.  Always true.  Used to produce dot files.
   def directed?
     true
+  end
+
+  # Determine all of the leaf nodes below a given vertex.
+  def leaves(vertex, direction = :out)
+    tree_from_vertex(vertex, direction).keys.find_all { |c| adjacent(c, :direction => direction).empty? }
   end
 
   # Collect all of the edges that the passed events match.  Returns
@@ -174,7 +185,7 @@ class Puppet::SimpleGraph
   # Add a new edge.  The graph user has to create the edge instance,
   # since they have to specify what kind of edge it is.
   def add_edge(e,*a)
-    return add_edge(Puppet::Relationship.new(e,*a)) unless a.empty?
+    return add_relationship(e,*a) unless a.empty?
     @upstream_from.clear
     @downstream_from.clear
     add_vertex(e.source)
@@ -299,14 +310,6 @@ class Puppet::SimpleGraph
       predecessor[child] = parent
     end
     predecessor
-  end
-
-  def downstream_from_vertex(v)
-    @downstream_from[v] || @out_from[v].keys.inject(@downstream_from[v] = {v => 1}) { |result,node| result.update downstream_from_vertex(node) }
-  end
-
-  def upstream_from_vertex(v)
-    @upstream_from[v]   || @in_to[v].keys.inject(   @upstream_from[v]   = {v => 1}) { |result,node| result.update upstream_from_vertex(node) }
   end
 
   def downstream_from_vertex(v)
