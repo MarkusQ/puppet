@@ -35,7 +35,9 @@ module Puppet::Network::HTTP::API::V1
 
   def indirection2uri(request)
     indirection = request.method == :search ? pluralize(request.indirection_name.to_s) : request.indirection_name.to_s
-    "/#{request.environment.to_s}/#{indirection}/#{request.escaped_key}#{request.query_string}"
+    x = "/#{request.environment.to_s}/#{indirection}/#{request.escaped_key}#{request.query_string}"
+    p x
+    x
   end
 
   def indirection_method(http_method, indirection)

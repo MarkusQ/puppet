@@ -8,7 +8,8 @@ module Puppet::Configurer::PluginHandler
 
   # Retrieve facts from the central server.
   def download_plugins
-    return nil unless download_plugins?
+    p [:env]
+    #return nil unless download_plugins?
     Puppet::Configurer::Downloader.new("plugin", Puppet[:plugindest], Puppet[:pluginsource], Puppet[:pluginsignore]).evaluate.each { |file| load_plugin(file) }
   end
 

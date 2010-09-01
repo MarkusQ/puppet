@@ -76,20 +76,21 @@ class Puppet::Module
     #
     # If the file name is nil, then the base directory for the
     # file type is passed; this is used for fileserving.
-    define_method(type.to_s.sub(/s$/, '')) do |file|
+    eval %Q{
+    def #{type.to_s.sub(/s$/, '')}(file=nil)
       return nil unless path
 
       # If 'file' is nil then they're asking for the base path.
       # This is used for things like fileserving.
       if file
-        full_path = File.join(subpath(type), file)
+        full_path = File.join(subpath(#{type.inspect}), file)
       else
-        full_path = subpath(type)
+        full_path = subpath(#{type.inspect})
       end
 
       return nil unless FileTest.exist?(full_path)
       return full_path
-    end
+    end}
   end
 
   def exist?

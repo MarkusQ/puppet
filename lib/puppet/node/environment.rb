@@ -105,6 +105,7 @@ class Puppet::Node::Environment
   # Cache the list, because it can be expensive to create.
   cached_attr(:modules, :ttl => Puppet[:filetimeout]) do
     module_names = modulepath.collect { |path| Dir.entries(path) }.flatten.uniq
+    p [:modulepath,modulepath,module_names]
     module_names.collect do |path|
       begin
         Puppet::Module.new(path, self)
