@@ -297,7 +297,7 @@ module Generators
 
       unless ref
         for file in @files
-          if file.document_self and (file.contxt.respond_to? :global && file.context.global)
+          if file.document_self and (file.context.respond_to? :global && file.context.global)
             ref = CGI.escapeHTML("#{CLASS_DIR}/#{file.context.module_name}.html")
             break
           end
