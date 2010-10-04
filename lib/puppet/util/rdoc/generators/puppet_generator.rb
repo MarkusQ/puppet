@@ -211,12 +211,8 @@ module Generators
       gen_an_index(@classes, 'All Classes', RDoc::Page::CLASS_INDEX, "fr_class_index.html")
       @allfiles.each do |file|
         unless file['file'].context.file_relative_name =~ /\.rb$/
-
-          gen_composite_index(
-            file,
-              RDoc::Page::COMBO_INDEX,
-
-              "#{MODULE_DIR}/fr_#{file["file"].context.module_name}.html")
+          fc = file["file"].context
+          gen_composite_index(file,RDoc::Page::COMBO_INDEX,"#{MODULE_DIR}/fr_#{fc.module_name}.html") if fc.respond_to?(:module_name)
         end
       end
     end
@@ -297,7 +293,8 @@ module Generators
 
       unless ref
         for file in @files
-          if file.document_self and (file.context.respond_to? :global && file.context.global)
+          puts file unless file.context.respond_to?(:global)
+          if file.document_self and (file.context.respond_to?(:global) && file.context.global)
             ref = CGI.escapeHTML("#{CLASS_DIR}/#{file.context.module_name}.html")
             break
           end
@@ -306,7 +303,7 @@ module Generators
 
       unless ref
         for file in @files
-          if file.document_self and !(file.context.respond_to? :global && file.context.global)
+          if file.document_self and !(file.context.respond_to?(:global) && file.context.global)
             ref = CGI.escapeHTML("#{CLASS_DIR}/#{file.context.module_name}.html")
             break
           end
