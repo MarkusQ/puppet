@@ -4,6 +4,6 @@ Puppet::Parser::Functions::newfunction(:fqdn_rand, :type => :rvalue, :doc =>
   distinguish the seed.") do |args|
     require 'md5'
     max = args.shift
-    srand MD5.new([lookupvar('fqdn'),args].join(':')).to_s.hex
+    srand MD5.new([lookupvar('::fqdn'),args].join(':')).to_s.hex
     rand(max).to_s
 end
