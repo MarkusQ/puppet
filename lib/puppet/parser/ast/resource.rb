@@ -53,6 +53,7 @@ class Resource < AST::ResourceReference
         # At some point, we need to switch all of this to return
         # resources instead of storing them like this.
         scope.compiler.add_resource(scope, resource)
+        scope.compiler.evaluate_classes([resource_title],scope,false) if fully_qualified_type == 'class'
         resource
       end
     }.reject { |resource| resource.nil? }

@@ -115,9 +115,16 @@ describe Puppet::Parser::AST::Resource do
 
     it "should correctly generate resources that can look up defined classes by title" do
       @scope.known_resource_types.add_hostclass Puppet::Resource::Type.new(:hostclass, "Myresource", {})
+      @scope.compiler.stubs(:evaluate_classes)
       res = resource("class").evaluate(@twoscope)[0]
       res.type.should == "Class"
       res.title.should == "Myresource"
+    end
+
+    it "should evaluate parameterized classes when they are instantiated" do
+      @scope.known_resource_types.add_hostclass Puppet::Resource::Type.new(:hostclass, "Myresource", {})
+      @scope.compiler.expects(:evaluate_classes).with(['myresource'],@twoscope,false)
+      resource("class").evaluate(@twoscope)[0]
     end
 
     it "should fail for resource types that do not exist" do
