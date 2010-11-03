@@ -28,14 +28,10 @@ module Puppet
     end
 
     def retrieve
-      if self.should
+      if should
         @should = @should.collect do |val|
-          unless val.is_a?(Integer)
-            if tmp = provider.validuser?(val)
-              val = tmp
-            else
-              raise "Could not find user #{val}"
-            end
+          if val.is_a? String
+            provider.validuser?(val) || raise "Could not find user #{val}"
           else
             val
           end
