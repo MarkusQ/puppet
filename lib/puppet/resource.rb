@@ -158,7 +158,7 @@ class Puppet::Resource
   class Reference
     attr_accessor :type,:title
     def initialize(type,title)
-      @type,@title = type,title
+      @type,@title = type.to_s,title.to_s
     end
   end
 
