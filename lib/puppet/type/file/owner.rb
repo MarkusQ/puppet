@@ -31,11 +31,12 @@ module Puppet
       if should
         @should = @should.collect do |val|
           if val.is_a? String
-            provider.validuser?(val) || raise "Could not find user #{val}"
+            provider.validuser?(val) || (puts "Could not find user #{val} of #{@should.inspect}"; nil)
           else
             val
           end
-        end
+        end.compact
+        raise "No valid users found." if should.empty? 
       end
       provider.retrieve(@resource)
     end
