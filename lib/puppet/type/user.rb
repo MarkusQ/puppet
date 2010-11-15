@@ -181,6 +181,10 @@ module Puppet
           raise ArgumentError, "Password minimum age must be provided as a number"
         end
       end
+
+      def retrieve
+        (provider.exists? && provider.respond_to?(:min_age) && provider.min_age) || :absent
+      end
     end
 
     newproperty(:password_max_age, :required_features => :manages_password_age) do
@@ -199,6 +203,10 @@ module Puppet
         if value.to_s !~ /^\d+$/
           raise ArgumentError, "Password maximum age must be provided as a number"
         end
+      end
+
+      def retrieve
+        (provider.exists? && provider.respond_to?(:max_age) && provider.max_age) || :absent
       end
     end
 
