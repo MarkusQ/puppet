@@ -20,7 +20,6 @@ class ZAML
   def self.dump(stuff, where='')
     z = new
     stuff.to_zaml(z)
-    Label.counter_reset
     where << z.to_s
   end
   #
@@ -62,7 +61,6 @@ class ZAML
     end
     def initialize(obj)
       @this_label_number = nil
-      @obj = obj # prevent garbage collection so that object id isn't reused
       @@previously_emitted_object[obj.object_id] = self
     end
     def to_s
@@ -225,6 +223,7 @@ class String
     gsub( /([\x80-\xFF])/ ) { |x| "\\x#{x.unpack("C")[0].to_s(16)}" }
   end
   def to_zaml(z)
+   z.first_time_only(self) {
     num = '[-+]?(0x)?\d+\.?\d*'
     case
       when self == ''
@@ -249,6 +248,7 @@ class String
       else
         z.emit(self)
     end
+   }
   end
 end
 
